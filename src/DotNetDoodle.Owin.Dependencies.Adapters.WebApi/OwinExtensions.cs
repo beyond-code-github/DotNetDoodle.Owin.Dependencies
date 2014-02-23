@@ -9,6 +9,8 @@ using System.Web.Http;
 
 namespace DotNetDoodle.Owin
 {
+    using global::Owin.Context;
+
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static class OwinExtensions
     {
@@ -26,6 +28,23 @@ namespace DotNetDoodle.Owin
             configuration.DependencyResolver = new OwinDependencyResolverWebApiAdapter(appContainer);
             HttpServer httpServer = new OwinDependencyScopeHttpServerAdapter(configuration, dispatcher);
             return app.UseWebApi(httpServer);
+        }
+
+        public static IContextBuilder<HttpServer> WithContainer(this IContextBuilder<HttpServer> builder, HttpConfiguration configuration)
+        {
+            IServiceProvider appContainer = builder.GetApplicationContainer();
+            configuration.DependencyResolver = new OwinDependencyResolverWebApiAdapter(appContainer);
+
+            if (builder.Context == null)
+            {
+                builder.Context = new OwinDependencyScopeHttpServerAdapter(configuration);
+                return builder;
+            }
+
+            var oldContext = builder.Context;
+            builder.Context = new OwinDependencyScopeHttpServerAdapter(configuration) { InnerHandler = oldContext };
+            
+            return builder;
         }
     }
 }
